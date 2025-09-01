@@ -1,0 +1,352 @@
+[
+  {
+    "name": "New Delhi",
+    "coordinates": {
+      "lat": 28.6139,
+      "lon": 77.209
+    }
+  },
+  {
+    "name": "Mumbai",
+    "coordinates": {
+      "lat": 19.076,
+      "lon": 72.8777
+    }
+  },
+  {
+    "name": "Bengaluru",
+    "coordinates": {
+      "lat": 12.9716,
+      "lon": 77.5946
+    }
+  },
+  {
+    "name": "Hyderabad",
+    "coordinates": {
+      "lat": 17.385,
+      "lon": 78.4867
+    }
+  },
+  {
+    "name": "Ahmedabad",
+    "coordinates": {
+      "lat": 23.0225,
+      "lon": 72.5714
+    }
+  },
+  {
+    "name": "Chennai",
+    "coordinates": {
+      "lat": 13.0827,
+      "lon": 80.2707
+    }
+  },
+  {
+    "name": "Kolkata",
+    "coordinates": {
+      "lat": 22.5726,
+      "lon": 88.3639
+    }
+  },
+  {
+    "name": "Pune",
+    "coordinates": {
+      "lat": 18.5204,
+      "lon": 73.8567
+    }
+  },
+  {
+    "name": "Jaipur",
+    "coordinates": {
+      "lat": 26.9124,
+      "lon": 75.7873
+    }
+  },
+  {
+    "name": "Surat",
+    "coordinates": {
+      "lat": 21.1702,
+      "lon": 72.8311
+    }
+  },
+  {
+    "name": "Lucknow",
+    "coordinates": {
+      "lat": 26.8467,
+      "lon": 80.9462
+    }
+  },
+  {
+    "name": "Kanpur",
+    "coordinates": {
+      "lat": 26.4499,
+      "lon": 80.3319
+    }
+  },
+  {
+    "name": "Nagpur",
+    "coordinates": {
+      "lat": 21.1458,
+      "lon": 79.0882
+    }
+  },
+  {
+    "name": "Indore",
+    "coordinates": {
+      "lat": 22.7196,
+      "lon": 75.8577
+    }
+  },
+  {
+    "name": "Thane",
+    "coordinates": {
+      "lat": 19.2183,
+      "lon": 72.9781
+    }
+  },
+  {
+    "name": "Bhopal",
+    "coordinates": {
+      "lat": 23.2599,
+      "lon": 77.4126
+    }
+  },
+  {
+    "name": "Visakhapatnam",
+    "coordinates": {
+      "lat": 17.6868,
+      "lon": 83.2185
+    }
+  },
+  {
+    "name": "Patna",
+    "coordinates": {
+      "lat": 25.5941,
+      "lon": 85.1376
+    }
+  },
+  {
+    "name": "Vadodara",
+    "coordinates": {
+      "lat": 22.3072,
+      "lon": 73.1812
+    }
+  },
+  {
+    "name": "Ghaziabad",
+    "coordinates": {
+      "lat": 28.6692,
+      "lon": 77.4538
+    }
+  },
+  {
+    "name": "Ludhiana",
+    "coordinates": {
+      "lat": 30.9,
+      "lon": 75.8573
+    }
+  },
+  {
+    "name": "Agra",
+    "coordinates": {
+      "lat": 27.1767,
+      "lon": 78.0081
+    }
+  },
+  {
+    "name": "Nashik",
+    "coordinates": {
+      "lat": 19.9975,
+      "lon": 73.7898
+    }
+  },
+  {
+    "name": "Faridabad",
+    "coordinates": {
+      "lat": 28.4089,
+      "lon": 77.3178
+    }
+  },
+  {
+    "name": "Meerut",
+    "coordinates": {
+      "lat": 28.9845,
+      "lon": 77.7064
+    }
+  },
+  {
+    "name": "Rajkot",
+    "coordinates": {
+      "lat": 22.3039,
+      "lon": 70.8022
+    }
+  },
+  {
+    "name": "Kalyan",
+    "coordinates": {
+      "lat": 19.2403,
+      "lon": 73.1305
+    }
+  },
+  {
+    "name": "Vasai-Virar",
+    "coordinates": {
+      "lat": 19.3919,
+      "lon": 72.8397
+    }
+  },
+  {
+    "name": "Varanasi",
+    "coordinates": {
+      "lat": 25.3176,
+      "lon": 82.9739
+    }
+  },
+  {
+    "name": "Srinagar",
+    "coordinates": {
+      "lat": 34.0837,
+      "lon": 74.7973
+    }
+  },
+  {
+    "name": "Aurangabad",
+    "coordinates": {
+      "lat": 19.8762,
+      "lon": 75.3433
+    }
+  },
+  {
+    "name": "Dhanbad",
+    "coordinates": {
+      "lat": 23.7957,
+      "lon": 86.4304
+    }
+  },
+  {
+    "name": "Amritsar",
+    "coordinates": {
+      "lat": 31.634,
+      "lon": 74.8723
+    }
+  },
+  {
+    "name": "Navi Mumbai",
+    "coordinates": {
+      "lat": 19.033,
+      "lon": 73.0297
+    }
+  },
+  {
+    "name": "Allahabad",
+    "coordinates": {
+      "lat": 25.4358,
+      "lon": 81.8463
+    }
+  },
+  {
+    "name": "Ranchi",
+    "coordinates": {
+      "lat": 23.3441,
+      "lon": 85.3096
+    }
+  },
+  {
+    "name": "Howrah",
+    "coordinates": {
+      "lat": 22.5958,
+      "lon": 88.2636
+    }
+  },
+  {
+    "name": "Coimbatore",
+    "coordinates": {
+      "lat": 11.0168,
+      "lon": 76.9558
+    }
+  },
+  {
+    "name": "Jabalpur",
+    "coordinates": {
+      "lat": 23.1815,
+      "lon": 79.9864
+    }
+  },
+  {
+    "name": "Gwalior",
+    "coordinates": {
+      "lat": 26.2183,
+      "lon": 78.1828
+    }
+  },
+  {
+    "name": "Vijayawada",
+    "coordinates": {
+      "lat": 16.5062,
+      "lon": 80.648
+    }
+  },
+  {
+    "name": "Jodhpur",
+    "coordinates": {
+      "lat": 26.2389,
+      "lon": 73.0243
+    }
+  },
+  {
+    "name": "Madurai",
+    "coordinates": {
+      "lat": 9.9252,
+      "lon": 78.1198
+    }
+  },
+  {
+    "name": "Raipur",
+    "coordinates": {
+      "lat": 21.2514,
+      "lon": 81.6296
+    }
+  },
+  {
+    "name": "Kota",
+    "coordinates": {
+      "lat": 25.2138,
+      "lon": 75.8648
+    }
+  },
+  {
+    "name": "Guwahati",
+    "coordinates": {
+      "lat": 26.1445,
+      "lon": 91.7362
+    }
+  },
+  {
+    "name": "Chandigarh",
+    "coordinates": {
+      "lat": 30.7333,
+      "lon": 76.7794
+    }
+  },
+  {
+    "name": "Solapur",
+    "coordinates": {
+      "lat": 17.6599,
+      "lon": 75.9064
+    }
+  },
+  {
+    "name": "Hubli-Dharwad",
+    "coordinates": {
+      "lat": 15.3647,
+      "lon": 75.124
+    }
+  },
+  {
+    "name": "Tiruchirappalli",
+    "coordinates": {
+      "lat": 10.7905,
+      "lon": 78.7047
+    }
+  }
+]

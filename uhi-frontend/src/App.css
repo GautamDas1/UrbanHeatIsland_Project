@@ -1,0 +1,56 @@
+/* App.css */
+
+/* Smooth scroll for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Global font smoothing and base background fallback */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #fffdf7;
+}
+
+/* Animate card on hover - fallback for Tailwind transition */
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card-hover:hover {
+  transform: scale(1.03);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Optional: Add a stylish wave pattern background */
+.wave-bg {
+  background-image: url('/images/patterns/wave-pattern.svg'); /* Add your own SVG pattern here */
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Fallback font family (optional) */
+h1, h2, h3, h4 {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Glowing border for highlighted cards (optional) */
+.glow-card {
+  border: 2px solid #5eead4;
+  box-shadow: 0 0 12px rgba(94, 234, 212, 0.6);
+}
+
+/* Subtle fade-in animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in {
+  animation: fadeInUp 0.5s ease-in-out;
+}

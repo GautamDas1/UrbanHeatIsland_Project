@@ -9,7 +9,7 @@ import logging
 routes = Blueprint('routes', __name__)
 uhi_model = UHIMLModel()
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO) #hello this is my first commit
 
 @routes.route("/predict", methods=["GET"])
 @cross_origin()

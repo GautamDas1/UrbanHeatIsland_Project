@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO) #hello this is my first commit
 @routes.route("/predict", methods=["GET"])
 @cross_origin()
 def predict():
-    lat = request.args.get("latitude")
+    lat = request.args.get("lat")
     lon = request.args.get("lon")
     city_name = request.args.get("city", "Unknown Location")
 

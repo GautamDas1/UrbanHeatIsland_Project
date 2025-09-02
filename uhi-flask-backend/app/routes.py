@@ -3,8 +3,12 @@ from flask_cors import cross_origin
 import logging
 import os, json
 
+<<<<<<< HEAD
 routes = Blueprint("routes", __name__)
 logging.basicConfig(level=logging.INFO)
+=======
+logging.basicConfig(level=logging.INFO) #hello this is my first commit
+>>>>>>> 0d5fdb9ab2b5aaa3ad6969147cd4ef30eef8899b
 
 # --- Utility to load JSON ---
 def load_json(filename):

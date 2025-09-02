@@ -3,12 +3,8 @@ from flask_cors import cross_origin
 import logging
 import os, json
 
-<<<<<<< HEAD
 routes = Blueprint("routes", __name__)
 logging.basicConfig(level=logging.INFO)
-=======
-logging.basicConfig(level=logging.INFO) #hello this is my first commit
->>>>>>> 0d5fdb9ab2b5aaa3ad6969147cd4ef30eef8899b
 
 # --- Utility to load JSON ---
 def load_json(filename):
@@ -19,6 +15,40 @@ def load_json(filename):
         return None
     with open(filepath, "r") as f:
         return json.load(f)
+
+
+# --- Utility: Predict metrics for custom lat/lon ---
+def predict_metrics(lat, lon):
+    """
+    Return a reasonable estimate for avg and mitigated LST
+    if city not found in city_metrics.json.
+    """
+    try:
+        lat = float(lat)
+        lon = float(lon)
+        avg_temp = round((lat % 40) + 25, 2)      # Example formula
+        mitigated_temp = round(avg_temp * 0.9, 2)
+        # Determine UHI level based on avg_temp
+        if avg_temp >= 45:
+            level = "High"
+        elif avg_temp >= 35:
+            level = "Medium"
+        else:
+            level = "Low"
+        return {
+            "city": "Custom Location",
+            "avg_temp": avg_temp,
+            "mitigated_temp": mitigated_temp,
+            "level": level
+        }
+    except Exception as e:
+        logging.error(f"Error in predict_metrics: {e}")
+        return {
+            "city": "Custom Location",
+            "avg_temp": 0,
+            "mitigated_temp": 0,
+            "level": "Low"
+        }
 
 
 # ✅ Prediction endpoint
@@ -35,31 +65,27 @@ def predict():
     try:
         metrics = load_json("city_metrics.json")
         if not metrics:
-            return jsonify({"error": "city_metrics.json not found"}), 500
+            logging.warning("city_metrics.json not found, using dynamic prediction")
+            return jsonify(predict_metrics(lat, lon))
 
-        # Find city in JSON (fix: use "city" instead of "name")
+        # Find city in JSON
         match = next((m for m in metrics if m["city"].lower() == city_name.lower()), None)
 
-        # If no match found → fallback response
-        if not match:
-            logging.warning(f"No data found for {city_name}, returning fallback.")
-            avg_temp = round(float(lat) % 40 + 20, 2)   # just dummy value
-            mitigated_temp = round(avg_temp * 0.9, 2)
+        # If city found in JSON
+        if match:
             return jsonify({
                 "city": city_name,
-                "avg_temp": avg_temp,
-                "mitigated_temp": mitigated_temp,
-                "level": "Medium"
+                "avg_temp": match.get("original_LST", 0),
+                "mitigated_temp": match.get("mitigated_LST", 0),
+                "level": match.get("level", "Medium")
             })
 
-        return jsonify({
-            "city": city_name,
-            "avg_temp": match["original_LST"],
-            "mitigated_temp": match["mitigated_LST"],
-            "level": match["level"]
-        })
+        # If city not found → use dynamic prediction
+        logging.info(f"No data for {city_name}, using dynamic prediction")
+        return jsonify(predict_metrics(lat, lon))
+
     except Exception as e:
-        logging.error(f"Error in prediction for {city_name}: {e}")
+        logging.error(f"Error in /predict for {city_name}: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -73,7 +99,7 @@ def heatmap():
             return jsonify({"error": "heatmap_data.json not found"}), 500
         return jsonify(data)
     except Exception as e:
-        logging.error(f"Error in heatmap generation: {e}")
+        logging.error(f"Error in /heatmap: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -87,5 +113,5 @@ def cities():
             return jsonify({"error": "indian_cities.json not found"}), 500
         return jsonify(cities)
     except Exception as e:
-        logging.error(f"Error loading cities: {e}")
+        logging.error(f"Error loading /cities: {e}")
         return jsonify({"error": str(e)}), 500

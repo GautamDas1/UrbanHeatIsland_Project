@@ -4,13 +4,14 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-draw";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet.heat";
+import axios from "../api/axios"; // ✅ Use backend API
 
 // Fix for default Leaflet marker icons not showing
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
 });
 
 const MapView = forwardRef(({ selectedCity, setMetrics, setChartData, setLoading }, ref) => {
@@ -18,7 +19,7 @@ const MapView = forwardRef(({ selectedCity, setMetrics, setChartData, setLoading
   const drawnItemsRef = useRef(null);
   const heatLayerRef = useRef(null);
 
-  // Expose displayHeatmap for manual triggering
+  // ✅ Expose method to update heatmap + metrics from MapPage
   useImperativeHandle(ref, () => ({
     displayHeatmap: (heatmapPoints, predictions) => {
       if (!mapRef.current) return;
@@ -30,21 +31,29 @@ const MapView = forwardRef(({ selectedCity, setMetrics, setChartData, setLoading
       if (heatmapPoints?.length > 0) {
         heatLayerRef.current = L.heatLayer(heatmapPoints, {
           radius: 25,
-          blur: 15,
+          blur: 20,
           maxZoom: 17,
-          gradient: { 0.0: 'blue', 0.5: 'lime', 1.0: 'red' }
+          gradient: {
+            0.0: "blue",
+            0.4: "lime",
+            0.6: "yellow",
+            0.8: "orange",
+            1.0: "red",
+          },
         }).addTo(mapRef.current);
       }
 
       if (predictions?.length > 0) {
         const firstPrediction = predictions[0];
         setMetrics({
-          level: firstPrediction.uhi_level,
-          avg: firstPrediction.average_temperature_celsius,
+          city: firstPrediction.city,
+          level: firstPrediction.level,
+          avg_temp: firstPrediction.avg_temp,
+          mitigated_temp: firstPrediction.mitigated_temp,
         });
         setChartData([
-          { name: "Original", value: firstPrediction.average_temperature_celsius },
-          { name: "Mitigated", value: firstPrediction.mitigated_temperature_celsius },
+          { name: "Original", value: firstPrediction.avg_temp },
+          { name: "Mitigated", value: firstPrediction.mitigated_temp },
         ]);
       } else {
         setMetrics(null);
@@ -52,10 +61,10 @@ const MapView = forwardRef(({ selectedCity, setMetrics, setChartData, setLoading
       }
 
       setLoading(false);
-    }
+    },
   }));
 
-  // Initialize map
+  // ✅ Initialize map
   useEffect(() => {
     if (!mapRef.current) {
       mapRef.current = L.map("map", {
@@ -83,7 +92,7 @@ const MapView = forwardRef(({ selectedCity, setMetrics, setChartData, setLoading
       });
       mapRef.current.addControl(drawControl);
 
-      // On shape drawn
+      // ✅ Handle user-drawn AOI
       mapRef.current.on(L.Draw.Event.CREATED, async (e) => {
         drawnItemsRef.current.clearLayers();
         drawnItemsRef.current.addLayer(e.layer);
@@ -97,23 +106,25 @@ const MapView = forwardRef(({ selectedCity, setMetrics, setChartData, setLoading
 
         if (center) {
           setLoading(true);
-          try {
-            const res = await fetch("http://127.0.0.1:5000/api/map-data", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ lat: center.lat, lon: center.lng })
-            });
-            const data = await res.json();
 
-            if (data.heatmap && data.predictions) {
-              ref.current?.displayHeatmap(data.heatmap, data.predictions);
-            } else {
-              setMetrics(null);
-              setChartData([]);
-              setLoading(false);
-            }
+          try {
+            // ✅ Get prediction from backend
+            const metricsRes = await axios.get("/predict", {
+              params: { lat: center.lat, lon: center.lng, city: "Custom Location" },
+            });
+
+            // ✅ Get heatmap points from backend
+            const heatmapRes = await axios.get("/heatmap");
+
+            const heatmapPoints = heatmapRes.data.heatmap.map((h) => [
+              h.lat,
+              h.lon,
+              h.intensity,
+            ]);
+
+            ref.current?.displayHeatmap(heatmapPoints, [metricsRes.data]);
           } catch (err) {
-            console.error("Error fetching map data:", err);
+            console.error("Error fetching backend data:", err);
             setLoading(false);
           }
         }
@@ -128,14 +139,13 @@ const MapView = forwardRef(({ selectedCity, setMetrics, setChartData, setLoading
     };
   }, []);
 
-  // Fly to city when selected
+  // ✅ Fly to city when selected
   useEffect(() => {
     if (selectedCity && mapRef.current) {
-      const cityData = selectedCity.value || selectedCity;
-      if (cityData.lat && cityData.lon) {
-        mapRef.current.flyTo([cityData.lat, cityData.lon], 12);
+      if (selectedCity.lat && selectedCity.lon) {
+        mapRef.current.flyTo([selectedCity.lat, selectedCity.lon], 12);
         drawnItemsRef.current.clearLayers();
-        L.marker([cityData.lat, cityData.lon]).addTo(drawnItemsRef.current);
+        L.marker([selectedCity.lat, selectedCity.lon]).addTo(drawnItemsRef.current);
       }
     }
   }, [selectedCity]);

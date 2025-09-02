@@ -1,35 +1,50 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 const Navbar = () => {
+  const baseStyle =
+    "px-4 py-2 rounded-full font-medium transition-all duration-300";
+  const activeStyle =
+    "bg-yellow-300 text-indigo-900 shadow-md"; // highlight for active page
+  const inactiveStyle =
+    "bg-white text-indigo-700 hover:bg-indigo-100 hover:shadow";
+
   return (
-    <nav className="bg-indigo-700 text-white px-6 py-4 shadow-md flex justify-between items-center sticky top-0 z-50 font-sans">
-      <h1 className="text-xl font-bold">🌍 UHI Visualizer</h1>
-      <div className="space-x-4">
-        <Link
+    <nav className="bg-gradient-to-r from-indigo-700 to-indigo-900 text-white px-6 py-4 shadow-md flex justify-between items-center sticky top-0 z-50 font-sans">
+      <h1 className="text-xl font-bold tracking-wide">🌍 Urban AI</h1>
+      <div className="space-x-3">
+        <NavLink
           to="/"
-          className="bg-white text-indigo-700 px-4 py-2 rounded-full hover:bg-indigo-100"
+          className={({ isActive }) =>
+            `${baseStyle} ${isActive ? activeStyle : inactiveStyle}`
+          }
         >
           Home
-        </Link>
-        <Link
+        </NavLink>
+        <NavLink
           to="/about"
-          className="bg-white text-indigo-700 px-4 py-2 rounded-full hover:bg-indigo-100"
+          className={({ isActive }) =>
+            `${baseStyle} ${isActive ? activeStyle : inactiveStyle}`
+          }
         >
           About
-        </Link>
-        <Link
+        </NavLink>
+        <NavLink
           to="/map"
-          className="bg-white text-indigo-700 px-4 py-2 rounded-full hover:bg-indigo-100"
+          className={({ isActive }) =>
+            `${baseStyle} ${isActive ? activeStyle : inactiveStyle}`
+          }
         >
           Map
-        </Link>
-        <Link
+        </NavLink>
+        <NavLink
           to="/contact"
-          className="bg-white text-indigo-700 px-4 py-2 rounded-full hover:bg-indigo-100"
+          className={({ isActive }) =>
+            `${baseStyle} ${isActive ? activeStyle : inactiveStyle}`
+          }
         >
           Contact
-        </Link>
+        </NavLink>
       </div>
     </nav>
   );

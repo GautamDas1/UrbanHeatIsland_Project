@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import CitySearch from "./CitySearch";
 import MapView from "./MapView";
 import Metrics from "./Metrics";
 import ChartView from "./ChartView";
-import axiosInstance from "../api/axios";
+
+const API_BASE = "http://127.0.0.1:5000/api";
 
 const MapPage = () => {
   const [selectedCity, setSelectedCity] = useState(null);
@@ -11,8 +12,17 @@ const MapPage = () => {
   const [metrics, setMetrics] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [cities, setCities] = useState([]);
 
-  const mapRef = useRef(null); // Reference to MapView to call displayHeatmap()
+  const mapRef = useRef(null);
+
+  // 🔹 Load cities from backend
+  useEffect(() => {
+    fetch(`${API_BASE}/cities`)
+      .then((res) => res.json())
+      .then((data) => setCities(data))
+      .catch((err) => console.error("Error loading cities:", err));
+  }, []);
 
   const handleCityChange = (city) => {
     setSelectedCity(city);
@@ -36,63 +46,53 @@ const MapPage = () => {
       return;
     }
 
-    try {
-      setLoading(true);
-      setMetrics(null);
-      setChartData([]);
+    setLoading(true);
+    setMetrics(null);
+    setChartData([]);
 
-      // Fetch prediction
-      const predictRes = await axiosInstance.get("/predict", {
-        params: { lat, lon, city: cityName },
+    try {
+      // 🔹 Fetch prediction from backend
+      const predictionRes = await fetch(
+        `${API_BASE}/predict?lat=${lat}&lon=${lon}&city=${cityName}`
+      );
+      const predictionData = await predictionRes.json();
+
+      if (predictionData.error) {
+        alert(predictionData.error);
+        setLoading(false);
+        return;
+      }
+
+      setMetrics({
+        level: predictionData.level,
+        avg: predictionData.avg_temp,
       });
 
-      const predictionData = predictRes.data;
-      if (predictionData) {
-        setMetrics({
-          level: predictionData.level,
-          avg: predictionData.avg_temp,
-        });
-        setChartData([
-          { name: "Original", value: predictionData.avg_temp },
-          { name: "Mitigated", value: predictionData.mitigated_temp },
-        ]);
-      }
+      setChartData([
+        { name: "Original", value: predictionData.avg_temp },
+        { name: "Mitigated", value: predictionData.mitigated_temp },
+      ]);
 
-      // Fetch heatmap
-      const heatmapRes = await axiosInstance.get("/heatmap");
-      const heatmapPoints = [];
-      if (heatmapRes.data?.heatmap) {
-        heatmapRes.data.heatmap.forEach((h) => {
-          heatmapPoints.push([h.lat, h.lon, 1]);
-        });
-      }
+      // 🔹 Fetch heatmap data
+      const heatmapRes = await fetch(`${API_BASE}/heatmap`);
+      const heatmapJson = await heatmapRes.json();
 
-      // Call MapView's displayHeatmap
+      const heatmapPoints = heatmapJson.heatmap.map((h) => [
+        h.lat,
+        h.lon,
+        h.intensity,
+      ]);
+
       if (mapRef.current && mapRef.current.displayHeatmap) {
-        mapRef.current.displayHeatmap(heatmapPoints, [
-          {
-            uhi_level: predictionData.level,
-            average_temperature_celsius: predictionData.avg_temp,
-            mitigated_temperature_celsius: predictionData.mitigated_temp,
-          },
-        ]);
+        mapRef.current.displayHeatmap(heatmapPoints, predictionData);
       }
-    } catch (error) {
-      console.error("Error fetching UHI data:", error);
-      alert(
-        "Failed to fetch UHI prediction: " +
-          (error.response?.data?.error || error.message)
-      );
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching UHI data:", err);
+      alert("Failed to load analysis data.");
     }
-  };
 
-  useEffect(() => {
-    if (selectedCity && selectedCity.lat && selectedCity.lon) {
-      // Already handled in handleCityChange
-    }
-  }, [selectedCity]);
+    setLoading(false);
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-20 font-sans">
@@ -101,20 +101,13 @@ const MapPage = () => {
       </h2>
 
       <div className="mb-8">
-        <CitySearch onChange={handleCityChange} />
+        <CitySearch cities={cities} onChange={handleCityChange} />
       </div>
 
       <h3 className="text-2xl font-semibold mb-6 text-center text-gray-800">
         🗺️ Draw Area of Interest
       </h3>
-      <MapView
-        ref={mapRef}
-        selectedCity={selectedCity}
-        onDraw={handleDraw}
-        setMetrics={setMetrics}
-        setChartData={setChartData}
-        setLoading={setLoading}
-      />
+      <MapView ref={mapRef} selectedCity={selectedCity} onDraw={handleDraw} />
 
       <div className="text-center mt-10">
         <button

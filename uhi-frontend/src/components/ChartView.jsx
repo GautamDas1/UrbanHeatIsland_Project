@@ -1,16 +1,22 @@
 import React from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const ChartView = ({ data }) => {
+  if (!data || data.length === 0) return null;
+
   return (
-    <div className="bg-white rounded-lg p-4 shadow-md my-4">
-      <h2 className="text-xl font-semibold text-center text-gray-700 mb-2">📊 LST Comparison</h2>
+    <div className="mt-12 p-6 bg-white shadow-lg rounded-xl">
+      <h3 className="text-2xl font-bold text-indigo-700 mb-6 text-center">
+        📊 Temperature Comparison
+      </h3>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
-          <YAxis unit="°C" />
+          <YAxis label={{ value: "°C", angle: -90, position: "insideLeft" }} />
           <Tooltip />
-          <Bar dataKey="value" fill="#3182CE" />
+          <Legend />
+          <Bar dataKey="value" fill="#4f46e5" barSize={60} />
         </BarChart>
       </ResponsiveContainer>
     </div>

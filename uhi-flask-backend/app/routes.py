@@ -1,16 +1,23 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from flask_cors import cross_origin
-from .utils import load_city_data
-from .model.predictor import UHIMLModel
 import logging
-# from .utils import load_city_data
+import os, json
 
-
-routes = Blueprint('routes', __name__)
-uhi_model = UHIMLModel()
-
+routes = Blueprint("routes", __name__)
 logging.basicConfig(level=logging.INFO)
 
+# --- Utility to load JSON ---
+def load_json(filename):
+    base_dir = os.path.join(current_app.root_path, "data")
+    filepath = os.path.join(base_dir, filename)
+    if not os.path.exists(filepath):
+        logging.error(f"File not found: {filepath}")
+        return None
+    with open(filepath, "r") as f:
+        return json.load(f)
+
+
+# ✅ Prediction endpoint
 @routes.route("/predict", methods=["GET"])
 @cross_origin()
 def predict():
@@ -22,68 +29,59 @@ def predict():
         return jsonify({"error": "Latitude and Longitude are required"}), 400
 
     try:
-        avg_temp, mitigated_temp, level = uhi_model.predict_uhi(float(lat), float(lon), city_name)
+        metrics = load_json("city_metrics.json")
+        if not metrics:
+            return jsonify({"error": "city_metrics.json not found"}), 500
+
+        # Find city in JSON (fix: use "city" instead of "name")
+        match = next((m for m in metrics if m["city"].lower() == city_name.lower()), None)
+
+        # If no match found → fallback response
+        if not match:
+            logging.warning(f"No data found for {city_name}, returning fallback.")
+            avg_temp = round(float(lat) % 40 + 20, 2)   # just dummy value
+            mitigated_temp = round(avg_temp * 0.9, 2)
+            return jsonify({
+                "city": city_name,
+                "avg_temp": avg_temp,
+                "mitigated_temp": mitigated_temp,
+                "level": "Medium"
+            })
+
         return jsonify({
             "city": city_name,
-            "avg_temp": avg_temp,
-            "mitigated_temp": mitigated_temp,
-            "level": level
+            "avg_temp": match["original_LST"],
+            "mitigated_temp": match["mitigated_LST"],
+            "level": match["level"]
         })
     except Exception as e:
         logging.error(f"Error in prediction for {city_name}: {e}")
         return jsonify({"error": str(e)}), 500
 
 
+# ✅ Heatmap endpoint
 @routes.route("/heatmap", methods=["GET"])
 @cross_origin()
 def heatmap():
-    """
-    Returns heatmap tile URLs for all cities from indian_cities.json
-    """
     try:
-        cities = load_city_data()
-        heatmap_data = []
-
-        for city in cities:
-            city_name = city.get("name")
-            lat = city.get("lat")
-            lon = city.get("lon")
-
-            if lat is None or lon is None:
-                logging.warning(f"Skipping {city_name} due to missing coordinates")
-                continue
-
-            logging.info(f"Generating heatmap for {city_name} at ({lat}, {lon})")
-
-            try:
-                tile_url = uhi_model.generate_heatmap_url(float(lat), float(lon))
-                if not tile_url:
-                    logging.warning(f"No heatmap available for {city_name}")
-                    continue
-
-                heatmap_data.append({
-                    "city": city_name,
-                    "lat": float(lat),
-                    "lon": float(lon),
-                    "heatmap_tile_url": tile_url
-                })
-            except Exception as e:
-                logging.error(f"Error generating heatmap for {city_name}: {e}")
-                continue
-
-        return jsonify({"heatmap": heatmap_data})
-
+        data = load_json("heatmap_data.json")
+        if not data:
+            return jsonify({"error": "heatmap_data.json not found"}), 500
+        return jsonify(data)
     except Exception as e:
         logging.error(f"Error in heatmap generation: {e}")
         return jsonify({"error": str(e)}), 500
 
 
+# ✅ Cities endpoint
 @routes.route("/cities", methods=["GET"])
 @cross_origin()
 def cities():
     try:
-        cities = load_city_data()
-        return jsonify({"cities": cities})
+        cities = load_json("indian_cities.json")
+        if not cities:
+            return jsonify({"error": "indian_cities.json not found"}), 500
+        return jsonify(cities)
     except Exception as e:
         logging.error(f"Error loading cities: {e}")
         return jsonify({"error": str(e)}), 500

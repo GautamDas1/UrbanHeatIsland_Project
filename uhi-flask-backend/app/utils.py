@@ -2,6 +2,10 @@ import numpy as np
 import ee
 import json
 import os
+from .cities import CITY_COORDINATES as CITY_LIST
+
+# ✅ Convert CITY_LIST (list of dicts) into {name: (lat, lon)}
+CITY_COORDINATES = {city["name"]: (city["lat"], city["lon"]) for city in CITY_LIST}
 
 # ------------------ Earth Engine Initialization ------------------
 try:
@@ -18,15 +22,15 @@ def preprocess_city_data(city_name, city_coordinates=None):
     Args:
         city_name (str): Name of the city.
         city_coordinates (dict): Mapping city names to (lat, lon) tuples.
-                                 If None, assumes CITY_COORDINATES is globally available.
+                                 If None, uses CITY_COORDINATES.
 
     Returns:
         np.ndarray: 2D numpy array with features: NDVI, LST_day, LST_night, green_space_percent
     """
-    coords_source = city_coordinates if city_coordinates is not None else globals().get('CITY_COORDINATES')
+    coords_source = city_coordinates if city_coordinates is not None else CITY_COORDINATES
 
-    if coords_source is None or city_name not in coords_source:
-        raise ValueError(f"City '{city_name}' is not in the predefined list or coordinates not provided.")
+    if city_name not in coords_source:
+        raise ValueError(f"City '{city_name}' is not in the predefined list.")
 
     lat, lon = coords_source[city_name]
     point = ee.Geometry.Point([lon, lat])

@@ -1,99 +1,73 @@
-import numpy as np
 import ee
-import json
-import os
-from .cities import CITY_COORDINATES as CITY_LIST
+import logging
 
-# ✅ Convert CITY_LIST (list of dicts) into {name: (lat, lon)}
-CITY_COORDINATES = {city["name"]: (city["lat"], city["lon"]) for city in CITY_LIST}
-
-# ------------------ Earth Engine Initialization ------------------
+# Initialize Earth Engine
 try:
-    ee.Initialize(project='earthengine-uhi')  # Replace with your EE project ID
+    ee.Initialize(project='earthengine-uhi')
 except Exception as e:
-    raise RuntimeError("Failed to initialize Earth Engine. Make sure you authenticated.") from e
+    logging.info("Authenticating Earth Engine...")
+    ee.Authenticate(project='earthengine-uhi')
+    ee.Initialize(project='earthengine-uhi')
 
+# Example city green space percentages (can expand later)
+CITY_GREEN_SPACE = {
+    "Mumbai": 12,
+    "Delhi": 14,
+    "Bangalore": 17,
+    # Add others as needed
+}
 
-# ------------------ Preprocess City Satellite Data ------------------
-def preprocess_city_data(city_name, city_coordinates=None):
+def preprocess_city_data(lat, lon):
     """
-    Retrieves and processes satellite data for the given city.
-
-    Args:
-        city_name (str): Name of the city.
-        city_coordinates (dict): Mapping city names to (lat, lon) tuples.
-                                 If None, uses CITY_COORDINATES.
-
-    Returns:
-        np.ndarray: 2D numpy array with features: NDVI, LST_day, LST_night, green_space_percent
+    Fetch UHI metrics for given coordinates using MODIS/061/MOD11A2.
+    Returns avg_temp, mitigated_temp, UHI level, and green space percent.
     """
-    coords_source = city_coordinates if city_coordinates is not None else CITY_COORDINATES
+    try:
+        point = ee.Geometry.Point([lon, lat])
 
-    if city_name not in coords_source:
-        raise ValueError(f"City '{city_name}' is not in the predefined list.")
+        # MODIS/061/MOD11A2 (8-day LST at 1km resolution)
+        dataset = ee.ImageCollection("MODIS/061/MOD11A2").select("LST_Day_1km")
+        dataset = dataset.filterDate("2025-01-01", "2025-08-31")  # adjust date range
+        lst_image = dataset.mean().clip(point)
 
-    lat, lon = coords_source[city_name]
-    point = ee.Geometry.Point([lon, lat])
+        # Get the temperature at the point (Kelvin -> Celsius)
+        temp = lst_image.reduceRegion(
+            reducer=ee.Reducer.mean(),
+            geometry=point,
+            scale=1000
+        ).getInfo()["LST_Day_1km"] * 0.02 - 273.15  # MODIS scale factor
 
-    # Date range for data retrieval
-    start_date = "2023-01-01"
-    end_date = "2023-12-31"
-    
-    # -------- 1. NDVI --------
-    ndvi_collection = ee.ImageCollection("MODIS/006/MOD13A1") \
-        .filterDate(start_date, end_date) \
-        .filterBounds(point) \
-        .select("NDVI")
+        # Simple mitigation estimate (just for example)
+        mitigated_temp = temp - 3  # assume 3°C reduction via green space
 
-    ndvi_image = ndvi_collection.mean()
-    ndvi_dict = ndvi_image.reduceRegion(
-        reducer=ee.Reducer.mean(),
-        geometry=point,
-        scale=500,
-        maxPixels=1e9
-    ).getInfo()
+        # Determine UHI level
+        if temp >= 45:
+            level = "High"
+        elif temp >= 40:
+            level = "Medium"
+        else:
+            level = "Low"
 
-    ndvi_value = ndvi_dict.get("NDVI", None)
-    ndvi_value = (ndvi_value / 10000.0) if ndvi_value is not None else 0.2
+        # Approximate green space % (if known)
+        green_space = 0
+        for city, perc in CITY_GREEN_SPACE.items():
+            # simple distance check (optional)
+            if abs(lat - point.coordinates().get(1).getInfo()) < 0.1 and abs(lon - point.coordinates().get(0).getInfo()) < 0.1:
+                green_space = perc
+                break
 
-    # -------- 2. LST --------
-    lst_collection = ee.ImageCollection("MODIS/006/MOD11A2") \
-        .filterDate(start_date, end_date) \
-        .filterBounds(point) \
-        .select("LST_Day_1km", "LST_Night_1km")
+        return {
+            "avg_temp": round(temp, 2),
+            "mitigated_temp": round(mitigated_temp, 2),
+            "level": level,
+            "green_space_percent": green_space
+        }
 
-    lst_image = lst_collection.mean()
-    lst_dict = lst_image.reduceRegion(
-        reducer=ee.Reducer.mean(),
-        geometry=point,
-        scale=1000,
-        maxPixels=1e9
-    ).getInfo()
-
-    lst_day = lst_dict.get("LST_Day_1km", None)
-    lst_night = lst_dict.get("LST_Night_1km", None)
-    
-    lst_day = (lst_day * 0.02) - 273.15 if lst_day is not None else 30.0
-    lst_night = (lst_night * 0.02) - 273.15 if lst_night is not None else 20.0
-
-    # -------- 3. Green Space --------
-    green_space_percent = max(0.0, ndvi_value * 100.0)
-
-    return np.array([ndvi_value, lst_day, lst_night, green_space_percent]).reshape(1, -1)
-
-
-# ------------------ Load City Data from JSON ------------------
-def load_city_data(base_dir=None):
-    """
-    Load Indian cities from the JSON file.
-    base_dir: optional, the base directory of the app (Flask app config["BASE_DIR"])
-    """
-    if base_dir is None:
-        base_dir = os.path.dirname(__file__)  # folder containing utils.py
-
-    file_path = os.path.join(base_dir, "data", "indian_cities.json")
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"City data JSON file not found at {file_path}")
-
-    with open(file_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    except Exception as e:
+        logging.error(f"Error fetching data for coordinates ({lat}, {lon}): {e}")
+        return {
+            "avg_temp": None,
+            "mitigated_temp": None,
+            "level": "Unknown",
+            "green_space_percent": None
+        }

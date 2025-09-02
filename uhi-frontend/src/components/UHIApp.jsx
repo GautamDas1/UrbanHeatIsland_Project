@@ -1,9 +1,8 @@
-// src/components/UHIApp.jsx
-import React, { useState, useRef } from "react";
-import CitySearch from "./CitySearch";
-import Metrics from "./Metrics";
+import React, { useState, useEffect, useRef } from "react";
 import MapView from "./MapView";
+import Metrics from "./Metrics";
 import Graph from "./Graph";
+import axios from "../api/axios";
 
 const UHIApp = ({ cities }) => {
   const [selectedCity, setSelectedCity] = useState(null);
@@ -11,54 +10,60 @@ const UHIApp = ({ cities }) => {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const mapRef = useRef(null);
+  const mapRef = useRef();
 
-  const handleCityChange = (city) => {
+  // Handle city selection from dropdown
+  const handleCityChange = async (city) => {
     setSelectedCity(city);
     setLoading(true);
 
-    // If the backend already returns metrics for this city, we use it
-    if (city.avg_temp && city.mitigated_temp) {
-      const cityMetrics = {
-        city: city.value,
-        avg_temp: city.avg_temp,
-        mitigated_temp: city.mitigated_temp,
-        level: city.level || "Medium",
-      };
-      setMetrics(cityMetrics);
-      setChartData([
-        { name: "Original", value: cityMetrics.avg_temp },
-        { name: "Mitigated", value: cityMetrics.mitigated_temp },
-      ]);
-      setLoading(false);
-    } else {
-      // For Custom Location, fallback to default values
-      const fallbackMetrics = {
-        city: city.value || "Custom Location",
-        avg_temp: 35, // default average temp
-        mitigated_temp: 32, // default mitigated temp
-        level: "Medium",
-      };
-      setMetrics(fallbackMetrics);
-      setChartData([
-        { name: "Original", value: fallbackMetrics.avg_temp },
-        { name: "Mitigated", value: fallbackMetrics.mitigated_temp },
-      ]);
-      setLoading(false);
-    }
+    try {
+      const res = await axios.get("/predict", {
+        params: { lat: city.lat, lon: city.lon, city: city.name },
+      });
 
-    // Fly to city on the map
-    if (mapRef.current) {
-      mapRef.current.flyToCity(city);
+      const heatRes = await axios.get("/heatmap");
+
+      const heatmapPoints = heatRes.data.heatmap.map((h) => [
+        h.lat,
+        h.lon,
+        h.intensity,
+      ]);
+
+      mapRef.current?.displayHeatmap(heatmapPoints, [res.data]);
+    } catch (err) {
+      console.error("Error fetching backend data:", err);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="p-4">
-      <CitySearch cities={cities} onChange={handleCityChange} />
-      {loading && <p className="mt-4 text-indigo-600">Loading...</p>}
-      <Metrics data={metrics} />
-      <Graph data={chartData} />
+    <div className="space-y-6">
+      {/* Dropdown for cities */}
+      <div>
+        <select
+          className="border p-2 rounded"
+          onChange={(e) => {
+            const city = cities.find((c) => c.name === e.target.value);
+            if (city) handleCityChange(city);
+          }}
+        >
+          <option value="">Select a city</option>
+          {cities.map((c) => (
+            <option key={c.name} value={c.name}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Metrics and Graph */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <Metrics metrics={metrics} loading={loading} />
+        <Graph chartData={chartData} loading={loading} />
+      </div>
+
+      {/* Map */}
       <MapView
         ref={mapRef}
         selectedCity={selectedCity}

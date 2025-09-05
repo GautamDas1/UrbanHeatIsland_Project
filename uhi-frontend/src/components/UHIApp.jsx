@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import MapView from "./MapView";
 import Metrics from "./Metrics";
 import Graph from "./Graph";
@@ -18,21 +18,36 @@ const UHIApp = ({ cities }) => {
     setLoading(true);
 
     try {
+      // ✅ Fetch AI-enhanced prediction
       const res = await axios.get("/predict", {
         params: { lat: city.lat, lon: city.lon, city: city.name },
       });
 
-      const heatRes = await axios.get("/heatmap");
+      // ✅ Update metrics
+      setMetrics(res.data);
 
+      // ✅ Update chart data with Avg Temp, Mitigated Temp, Green Space %
+      setChartData([
+        { name: "Avg Temp", value: res.data.avg_temp },
+        { name: "Mitigated Temp", value: res.data.mitigated_temp },
+        { name: "Green Space %", value: res.data.green_space_percent },
+      ]);
+
+      // ✅ Fetch heatmap
+      const heatRes = await axios.get("/heatmap");
       const heatmapPoints = heatRes.data.heatmap.map((h) => [
         h.lat,
         h.lon,
         h.intensity,
       ]);
 
+      // ✅ Update map
       mapRef.current?.displayHeatmap(heatmapPoints, [res.data]);
     } catch (err) {
       console.error("Error fetching backend data:", err);
+      setMetrics(null);
+      setChartData([]);
+    } finally {
       setLoading(false);
     }
   };

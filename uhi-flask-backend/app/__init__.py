@@ -1,4 +1,3 @@
-
 from flask import Flask
 from flask_cors import CORS
 from .routes import routes
@@ -7,15 +6,13 @@ import os
 def create_app():
     app = Flask(__name__)
 
-    # Set base directory for data access
-    app.config["BASE_DIR"] = os.path.join(os.path.dirname(__file__), "data")
+    # Store base directory
+    app.config["BASE_DIR"] = os.path.abspath(os.path.dirname(__file__))
 
-    # Enable CORS for frontend
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    # Allow frontend access
+    CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173"]}})
 
     # Register routes
     app.register_blueprint(routes, url_prefix="/api")
 
     return app
-
-

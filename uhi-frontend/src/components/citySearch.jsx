@@ -9,30 +9,36 @@ const CitySearch = ({ cities, onChange }) => {
     lon: city.lon,
   }));
 
-  // Add a Custom Location option
-  const customOption = { value: "Custom Location", label: "Custom Location", lat: null, lon: null };
+  // Add a Custom Location option at the end
+  const customOption = {
+    value: "Custom Location",
+    label: "📍 Custom Location (draw on map)",
+    lat: null,
+    lon: null,
+  };
 
   return (
     <Select
       options={[...options, customOption]}
       onChange={(opt) => {
-        // If user selects Custom Location, pass placeholder lat/lon (or null) to parent
-        if (opt.value === "Custom Location") {
-          onChange({
-            city: opt.value,
-            lat: opt.lat,
-            lon: opt.lon,
-          });
-        } else {
-          onChange({
-            city: opt.value,
-            lat: opt.lat,
-            lon: opt.lon,
-          });
-        }
+        // Pass the selected city to parent
+        onChange({
+          city: opt.value,
+          lat: opt.lat,
+          lon: opt.lon,
+        });
       }}
-      placeholder="Search for a city..."
-      className="w-full"
+      placeholder="🔍 Search for a city..."
+      className="w-full text-sm"
+      styles={{
+        control: (base) => ({
+          ...base,
+          borderRadius: "0.5rem",
+          borderColor: "#d1d5db", // Tailwind gray-300
+          boxShadow: "none",
+          "&:hover": { borderColor: "#9ca3af" }, // Tailwind gray-400
+        }),
+      }}
     />
   );
 };

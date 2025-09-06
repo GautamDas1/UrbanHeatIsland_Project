@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import CitySearch from "./CitySearch";
+import CitySearch from "./citySearch";
 import MapView from "./MapView";
 import Metrics from "./Metrics";
 import ChartView from "./ChartView";

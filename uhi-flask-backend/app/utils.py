@@ -1,90 +1,53 @@
-import ee
-import numpy as np
-from datetime import datetime, timedelta
-import joblib
-import os
 import logging
+from .model.predictor import UHIMLModel
 
-# Initialize Earth Engine
-ee.Initialize(project='earthengine-uhi')
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Load trained AI model
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "model", "avg_temp_model.pkl")
-model = joblib.load(MODEL_PATH)
+# Initialize the model once
+try:
+    uhi_model = UHIMLModel()
+    logger.info("✅ Earth Engine UHI model initialized successfully!")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize UHI model: {e}")
+    uhi_model = None
 
-def preprocess_city_data(lat, lon, dt=None):
+# ------------------ Data Preprocessing ------------------
+def preprocess_city_data(city_data):
     """
-    Fetch MODIS LST data + run AI model for UHI metrics.
-    Handles missing keys safely and logs raw results.
+    Preprocess incoming city data.
+    Expects a dict with 'lat', 'lon', optionally 'green_space_percent'.
     """
+    try:
+        lat = float(city_data.get("lat"))
+        lon = float(city_data.get("lon"))
+        green_cover = city_data.get("green_space_percent", 0)  # default 0
+        green_cover = float(green_cover)
+        return {"lat": lat, "lon": lon, "green_space_percent": green_cover}
+    except Exception as e:
+        logger.error(f"❌ Error preprocessing city data: {e}")
+        raise ValueError("Invalid city data input") from e
+
+# ------------------ Prediction Wrapper ------------------
+def get_uhi_metrics(city_data):
+    """
+    Returns avg_temp, mitigated_temp, risk_level for a city or custom area.
+    """
+    if uhi_model is None:
+        raise RuntimeError("UHI model not initialized.")
 
     try:
-        point = ee.Geometry.Point([lon, lat])
-
-        # Use provided datetime or current UTC
-        if dt is None:
-            dt = datetime.utcnow()
-
-        # Use a wider date window to increase chance of valid data
-        start_date = dt - timedelta(days=90)
-        end_date = dt
-
-        # Get MODIS LST dataset
-        dataset = ee.ImageCollection("MODIS/061/MOD11A2") \
-            .select("LST_Day_1km") \
-            .filterDate(start_date, end_date) \
-            .filterBounds(point) \
-            .mean()
-
-        # Reduce region safely
-        lst_dict = dataset.reduceRegion(
-            reducer=ee.Reducer.mean(),
-            geometry=point,
-            scale=1000
-        ).getInfo()
-
-        logging.info(f"LST raw dictionary for ({lat}, {lon}): {lst_dict}")
-
-        # Extract value safely
-        lst = None
-        if lst_dict and isinstance(lst_dict, dict):
-            if "LST_Day_1km" in lst_dict:
-                lst = lst_dict["LST_Day_1km"]
-
-        if lst is None:
-            logging.warning(f"No LST data for ({lat}, {lon}) at {dt}. Using fallback 30°C.")
-            lst_celsius = 30.0  # fallback
-        else:
-            lst_celsius = (lst * 0.02) - 273.15  # MODIS scale factor & Kelvin to °C
-
-        # Features for AI model: [lat, lon, lst_celsius]
-        features = np.array([[lat, lon, lst_celsius]])
-        predicted_temp = model.predict(features)[0]
-
-        # Mitigation assumption: +15% green cover → -3°C reduction
-        mitigated_temp = predicted_temp - 3.0
-
-        # Determine UHI severity
-        if predicted_temp >= 40:
-            level = "High"
-        elif predicted_temp >= 35:
-            level = "Medium"
-        else:
-            level = "Low"
-
+        processed = preprocess_city_data(city_data)
+        avg_temp, mitigated_temp, level = uhi_model.predict_uhi(
+            lat=processed["lat"],
+            lon=processed["lon"],
+            green_space_percent=processed["green_space_percent"]
+        )
         return {
-            "avg_temp": round(predicted_temp, 2),
-            "mitigated_temp": round(mitigated_temp, 2),
-            "level": level,
-            "green_space_percent": 15
+            "avg_temp": avg_temp,
+            "mitigated_temp": mitigated_temp,
+            "level": level
         }
-
     except Exception as e:
-        logging.error(f"Error in preprocess_city_data: {e}")
-        # Return fallback values if EE fails completely
-        return {
-            "avg_temp": 30.0,
-            "mitigated_temp": 27.0,
-            "level": "Low",
-            "green_space_percent": 15
-        }
+        logger.error(f"❌ Error fetching data for coordinates ({city_data.get('lat')}, {city_data.get('lon')}): {e}")
+        raise

@@ -8,8 +8,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ------------------ Earth Engine Service Account Setup ------------------
-# SERVICE_ACCOUNT = "uhi-backend@earthengine-uhi.iam.gserviceaccount.com"  # e.g., uhi-backend@your-project.iam.gserviceaccount.com
-# KEY_FILE = r"D:\jsonfile\earthengine-uhi-9da822721bd6.json"
+SERVICE_ACCOUNT = "Email Project"  # e.g., uhi-backend@your-project.iam.gserviceaccount.com
+KEY_FILE = "YOur Key Json file"
   # path to the JSON key you downloaded
 
 try:

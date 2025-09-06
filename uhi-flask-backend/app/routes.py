@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_cors import cross_origin
 import logging
+from datetime import datetime
 from .utils import preprocess_city_data
 
 routes = Blueprint("routes", __name__)
@@ -13,6 +14,7 @@ def predict():
     lat = request.args.get("lat")
     lon = request.args.get("lon")
     city_name = request.args.get("city", "Custom Location")
+    dt_str = request.args.get("datetime")  # Optional ISO datetime string
 
     if not lat or not lon:
         return jsonify({"error": "Latitude and Longitude are required"}), 400
@@ -21,8 +23,14 @@ def predict():
         lat = float(lat)
         lon = float(lon)
 
+        # Parse datetime if provided, else use current UTC time
+        if dt_str:
+            dt = datetime.fromisoformat(dt_str)
+        else:
+            dt = datetime.utcnow()
+
         # Fetch real satellite data + AI prediction
-        metrics = preprocess_city_data(lat, lon)
+        metrics = preprocess_city_data(lat, lon, dt)
 
         response = {
             "city": city_name,
